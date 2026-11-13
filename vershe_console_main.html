@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>色語卡牌主控台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;500;700&family=Playfair+Display:ital,wght@1,500;1,600&family=Noto+Sans+TC:wght@400;500;600;700&display=swap">
+<style>
+/* 設計方向：直式卡牌陳列桌 —— 上方是今天的三個問題與三張卡，中段是依色群排開的 104 張卡牌桌面，
+   點一張卡會把它放大翻開，像在客戶面前真的把那張卡翻過來一樣。單一明亮紙感主題，與 VERSHE 既有頁面一致。 */
+:root{
+  --paper:#FFF6F2; --paper-card:#FFFDFB; --paper-deep:#FBEDE6;
+  --ink:#2E2622; --ink-soft:#5B5049; --ink-faint:#9B8E85;
+  --rose:#D8536F; --rose-deep:#A83B52; --rose-pale:#FBD9DF;
+  --gold:#C9973E; --gold-pale:#F3E3C2;
+  --line:#EADFD8; --line-strong:#D8C7BC;
+  --shadow: 0 10px 28px rgba(60,42,36,.12);
+  --font-zh:'LXGW WenKai TC','Noto Serif TC',serif;
+  --font-ui:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  --font-en:'Playfair Display',serif;
+  color-scheme: light;
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--font-ui); line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+h1,h2,h3{font-family:var(--font-zh); font-weight:700; margin:0;}
+p{margin:0;}
+img{max-width:100%; display:block;}
+button{font-family:inherit; cursor:pointer;}
+[hidden]{display:none !important;}
+::selection{background:var(--rose-pale);}
+
+.page{max-width:1180px; margin:0 auto; padding-block:28px 80px;}
+
+.btn{
+  font-family:var(--font-ui); font-size:13.5px; font-weight:600; letter-spacing:.02em;
+  border-radius:999px; border:1px solid var(--line-strong); background:var(--paper-card);
+  color:var(--ink-soft); padding:9px 16px; transition:all .15s;
+}
+.btn:hover{border-color:var(--rose-deep); color:var(--rose-deep);}
+.btn.small{padding:7px 13px; font-size:12.5px;}
+.btn.primary{background:var(--rose-deep); border-color:var(--rose-deep); color:#fff;}
+.btn.primary:hover{background:var(--rose); border-color:var(--rose); color:#fff;}
+.btn.ghost{background:transparent;}
+.btn.danger{color:var(--rose-deep);}
+.btn.danger:hover{background:var(--rose-pale); border-color:var(--rose-deep);}
+
+.topbar{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:6px;}
+.eyebrow{font-size:11.5px; letter-spacing:.3em; color:var(--rose-deep); font-weight:600; margin-bottom:8px;}
+.topbar h1{font-size:26px; letter-spacing:.04em;}
+.topbar-actions{display:flex; gap:8px;}
+
+.intro{max-width:640px; margin:14px 0 26px; font-size:14px; color:var(--ink-soft); line-height:1.9;}
+
+.quickfind{
+  background:var(--paper-card); border:1px solid var(--line); border-radius:14px;
+  padding:14px 18px; margin-bottom:26px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  box-shadow:var(--shadow);
+}
+.quickfind label{font-size:12.5px; color:var(--ink-faint); white-space:nowrap;}
+.quickfind-row{display:flex; gap:8px; flex:1; min-width:200px;}
+.quickfind-row input{flex:1; min-width:0;}
+
+input[type=text], textarea{
+  font-family:inherit; font-size:14.5px; color:var(--ink); background:#fff;
+  border:1px solid var(--line-strong); border-radius:9px; padding:9px 12px; outline:none; width:100%;
+}
+input[type=text]:focus, textarea:focus{border-color:var(--rose-deep);}
+textarea{resize:vertical; min-height:56px; line-height:1.65;}
+
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:14px;}
+.section-head h2{font-size:18px; letter-spacing:.03em;}
+.client-name{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-faint);}
+.client-name input{width:180px;}
+
+.slots{margin-bottom:30px;}
+.slot-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.slot{
+  background:var(--paper-card); border:1px solid var(--line); border-radius:14px; padding:14px 16px;
+  display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow); min-width:0;
+}
+.slot-head{font-size:12.5px; letter-spacing:.1em; color:var(--rose-deep); font-weight:700;}
+.slot-cardrow{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.slot-number{width:60px; flex-shrink:0; min-width:0;}
+.slot-thumb{
+  width:36px; height:50px; border-radius:6px; overflow:hidden; flex-shrink:0; background:var(--paper-deep);
+  border:1px solid var(--line-strong); display:flex; align-items:center; justify-content:center;
+}
+.slot-thumb img{width:100%; height:100%; object-fit:cover;}
+.slot-thumb-empty{font-size:11px; color:var(--ink-faint);}
+.slot-reveal{flex:1 1 100%; min-width:0;}
+
+.selected-strip{
+  display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; padding:12px 16px;
+  background:var(--gold-pale); border:1px solid var(--gold); border-radius:12px;
+}
+.selected-chip{
+  display:flex; align-items:center; gap:8px; background:var(--paper-card); border:1px solid var(--line-strong);
+  border-radius:999px; padding:5px 12px 5px 5px; font-size:12.5px; color:var(--ink-soft);
+}
+.selected-chip img{width:26px; height:36px; object-fit:cover; border-radius:4px;}
+.selected-chip b{color:var(--ink); font-weight:700;}
+
+.browse{margin-top:8px;}
+.group{margin-bottom:26px;}
+.group-head{display:flex; align-items:baseline; gap:10px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--line);}
+.group-dot{width:11px; height:11px; border-radius:50%; flex-shrink:0;}
+.group-label{font-family:var(--font-zh); font-size:15.5px; font-weight:700;}
+.group-ro{font-family:var(--font-en); font-style:italic; font-size:12.5px; color:var(--ink-faint); letter-spacing:.06em;}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:9px;}
+.tile{
+  position:relative; border-radius:9px; overflow:hidden; cursor:pointer; border:1px solid var(--line-strong);
+  aspect-ratio:756/1056; background:var(--paper-deep); transition:transform .12s, box-shadow .12s;
+}
+.tile:hover{transform:translateY(-2px); box-shadow:var(--shadow);}
+.tile img{width:100%; height:100%; object-fit:cover;}
+.tile .num{
+  position:absolute; top:4px; left:4px; min-width:20px; text-align:center; font-family:var(--font-en);
+  font-style:italic; font-size:11px; font-weight:600; color:var(--ink); background:rgba(255,253,251,.88);
+  border-radius:999px; padding:1px 5px; line-height:1.5;
+}
+
+.overlay{position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; padding:20px;}
+.overlay-backdrop{position:absolute; inset:0; background:rgba(46,38,34,.55); backdrop-filter:blur(2px);}
+.overlay-panel{
+  position:relative; z-index:1; background:var(--paper-card); border-radius:20px; box-shadow:0 24px 60px rgba(30,20,16,.35);
+  max-width:760px; width:100%; max-height:92vh; overflow-y:auto; padding:22px 22px 26px; display:flex; gap:22px; flex-wrap:wrap;
+}
+.overlay-close{position:absolute; top:12px; right:14px; background:none; border:none; font-size:20px; color:var(--ink-faint); line-height:1; padding:6px;}
+.overlay-close:hover{color:var(--rose-deep);}
+.flip-stage{flex:1 1 260px; min-width:220px; perspective:1600px;}
+.flip-card{
+  position:relative; width:100%; aspect-ratio:756/1056; margin:0 auto; cursor:pointer;
+  transform-style:preserve-3d; transition:transform .55s cubic-bezier(.4,.1,.2,1);
+}
+.flip-card.flipped{transform:rotateY(180deg);}
+.flip-card .face{
+  position:absolute; inset:0; width:100%; height:100%; border-radius:16px; box-shadow:var(--shadow);
+  backface-visibility:hidden; object-fit:cover;
+}
+.flip-card .face.front{transform:rotateY(180deg);}
+.flip-hint{text-align:center; font-size:12px; color:var(--ink-faint); margin-top:10px;}
+.overlay-info{flex:1 1 220px; min-width:200px; display:flex; flex-direction:column; gap:14px;}
+.overlay-id{font-family:var(--font-en); font-style:italic; color:var(--rose-deep); font-size:13px; letter-spacing:.06em;}
+.overlay-name{font-family:var(--font-zh); font-size:22px; font-weight:700;}
+.overlay-question{background:var(--paper-deep); border-left:3px solid var(--rose-deep); border-radius:0 10px 10px 0; padding:12px 14px;}
+.oq-label{font-size:11px; color:var(--rose-deep); letter-spacing:.12em; margin-bottom:5px; font-weight:700;}
+.oq-text{font-size:13.5px; color:var(--ink-soft); line-height:1.75; white-space:pre-wrap;}
+.overlay-assign{display:flex; flex-direction:column; gap:7px;}
+.oa-label{font-size:12px; color:var(--ink-faint);}
+.oa-buttons{display:flex; gap:6px; flex-wrap:wrap;}
+.overlay-nav{display:flex; gap:8px; flex-wrap:wrap; margin-top:auto; padding-top:6px;}
+
+.confirm-modal{position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;}
+.confirm-modal::before{content:""; position:absolute; inset:0; background:rgba(46,38,34,.5);}
+.confirm-box{
+  position:relative; background:var(--paper-card); border-radius:16px; padding:22px 24px; max-width:360px;
+  box-shadow:0 20px 50px rgba(30,20,16,.3); display:flex; flex-direction:column; gap:16px;
+}
+.confirm-box p{font-size:14.5px; line-height:1.8; color:var(--ink);}
+.confirm-actions{display:flex; justify-content:flex-end; gap:8px;}
+
+body.present .no-present{display:none !important;}
+body.present .page{padding-top:16px;}
+
+
+.listen-panel{
+  background:var(--paper-card); border:1px solid var(--line); border-radius:14px; padding:16px 18px;
+  margin-bottom:22px; box-shadow:var(--shadow);
+}
+.listen-head{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+.listen-title{font-size:13.5px; font-weight:700; color:var(--ink); margin-bottom:3px;}
+.listen-status{font-size:12px; color:var(--ink-faint);}
+.listen-status.live{color:#5E8A5E;}
+.listen-status.found{color:var(--rose-deep); font-weight:600;}
+.listen-actions{display:flex; gap:8px; flex-wrap:wrap;}
+.listen-hint{font-size:12px; color:var(--ink-faint); line-height:1.8; margin-top:10px;}
+
+@media (max-width:640px){
+  .slot-grid{grid-template-columns:1fr;}
+  .topbar{align-items:flex-start;}
+  .overlay-panel{flex-direction:column; padding:50px 16px 22px;}
+  .flip-stage{max-width:280px; margin:0 auto;}
+}
+</style>
+
+</head>
+<body>
+<div class="page">
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="eyebrow">VERSHE 色彩即詩 · 線上諮詢工具</div>
+      <h1>色語卡牌主控台</h1>
+    </div>
+    <div class="topbar-actions no-present">
+      <button id="btnPresent" class="btn ghost" type="button">簡報模式</button>
+      <button id="btnReset" class="btn ghost danger" type="button">新諮詢</button>
+    </div>
+  </header>
+
+  <section class="quickfind">
+    <label for="jumpInput">快速尋找卡牌</label>
+    <div class="quickfind-row">
+      <input id="jumpInput" type="text" inputmode="numeric" placeholder="輸入卡號 1–104" maxlength="3">
+      <button id="jumpBtn" class="btn primary" type="button">翻牌</button>
+    </div>
+  </section>
+
+
+  <section class="listen-panel no-present" id="listenPanel">
+    <div class="listen-head">
+      <div>
+        <div class="listen-title">客戶線上填寫</div>
+        <div class="listen-status" id="listenStatus">尚未開始監聽</div>
+      </div>
+      <div class="listen-actions">
+        <button id="btnListenToggle" class="btn primary small" type="button">開始監聽</button>
+        <button id="btnListenRefresh" class="btn ghost small" type="button">立即重新整理</button>
+      </div>
+    </div>
+    <p class="listen-hint">把客戶填寫頁的連結傳給她／他，填完送出後，這裡會自動把三個問題與三張卡號帶進下面的欄位。如果客戶是用聊天室口頭報號碼，一樣可以直接手動輸入，不影響原本的用法。</p>
+  </section>
+
+  <section class="slots no-present">
+    <div class="section-head">
+      <h2>今日三個問題與三張卡</h2>
+      <div class="client-name"><label for="clientName">客戶稱呼</label><input id="clientName" type="text" placeholder="選填"></div>
+    </div>
+    <div class="slot-grid" id="slotGrid"></div>
+  </section>
+
+  <section class="selected-strip" id="selectedStrip" hidden></section>
+
+  <section class="browse">
+    <div class="section-head"><h2>104 張卡牌・依色群排列</h2></div>
+    <div id="groupsWrap"></div>
+  </section>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="overlay-backdrop" id="overlayBackdrop"></div>
+  <div class="overlay-panel">
+    <button class="overlay-close" id="overlayClose" type="button" aria-label="關閉">✕</button>
+    <div class="flip-stage">
+      <div class="flip-card" id="flipCard">
+        <img class="face back" id="faceBack" alt="卡牌闔起的樣子" loading="eager">
+        <img class="face front" id="faceFront" alt="卡牌翻開後的內容" loading="eager">
+      </div>
+      <div class="flip-hint">點卡牌翻面</div>
+    </div>
+    <div class="overlay-info">
+      <div class="overlay-id" id="overlayId"></div>
+      <div class="overlay-name" id="overlayName"></div>
+      <div class="overlay-question no-present" id="overlayQuestion" hidden>
+        <div class="oq-label">對應的問題</div>
+        <div class="oq-text" id="oqText"></div>
+      </div>
+      <div class="overlay-assign no-present" id="overlayAssign">
+        <div class="oa-label">設為今天的：</div>
+        <div class="oa-buttons">
+          <button class="btn small" data-slot="0" type="button">第 1 題</button>
+          <button class="btn small" data-slot="1" type="button">第 2 題</button>
+          <button class="btn small" data-slot="2" type="button">第 3 題</button>
+        </div>
+      </div>
+      <div class="overlay-nav">
+        <button id="navPrev" class="btn ghost small" type="button">← 上一張</button>
+        <button id="navCover" class="btn ghost small" type="button">蓋回卡牌</button>
+        <button id="navNext" class="btn ghost small" type="button">下一張 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-modal" id="confirmModal" hidden>
+  <div class="confirm-box">
+    <p>確定要清空目前的三個問題與卡號，開始新的諮詢嗎？</p>
+    <div class="confirm-actions">
+      <button id="confirmCancel" class="btn ghost small" type="button">取消</button>
+      <button id="confirmOk" class="btn primary small" type="button">清空，開始新諮詢</button>
+    </div>
+  </div>
+</div>
+
+<script id="card-data" type="application/json">[{"n": "001", "name": "初醒", "code": "S01", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "002", "name": "餘暉", "code": "S02", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "003", "name": "霞隱", "code": "S03", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "004", "name": "曉染", "code": "S04", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "005", "name": "紅潮", "code": "S05", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "006", "name": "春氣", "code": "S06", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "007", "name": "暮染", "code": "S07", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "008", "name": "苔歲", "code": "T01", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "009", "name": "煙綠", "code": "T02", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "010", "name": "林深", "code": "T03", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "011", "name": "初葉", "code": "T04", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "012", "name": "蕨影", "code": "T05", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "013", "name": "遠草", "code": "T06", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "014", "name": "夜林", "code": "T07", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "015", "name": "礫跡", "code": "J01", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "016", "name": "紙間", "code": "J02", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "017", "name": "砂印", "code": "J03", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "018", "name": "木暮", "code": "J04", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "019", "name": "稻田", "code": "J05", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "020", "name": "窯前", "code": "J06", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "021", "name": "晨土", "code": "J07", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "022", "name": "遠岫", "code": "E01", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "023", "name": "晴湖", "code": "E02", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "024", "name": "暮靛", "code": "E03", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "025", "name": "霧際", "code": "E04", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "026", "name": "海沉", "code": "E05", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "027", "name": "雨前", "code": "E06", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "028", "name": "夜海", "code": "E07", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "029", "name": "稻熟", "code": "K01", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "030", "name": "金午", "code": "K02", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "031", "name": "脂光", "code": "K03", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "032", "name": "蜜光", "code": "K04", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "033", "name": "秋陽", "code": "K05", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "034", "name": "暖曦", "code": "K06", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "035", "name": "漆金", "code": "K07", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "036", "name": "墨夜", "code": "B01", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "037", "name": "燼後", "code": "B02", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "038", "name": "奧暗", "code": "B03", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "039", "name": "香餘", "code": "B04", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "040", "name": "淵夜", "code": "B05", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "041", "name": "磐聲", "code": "B06", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "042", "name": "沉木", "code": "B07", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "043", "name": "薄暮", "code": "H01", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "044", "name": "宵紫", "code": "H02", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "045", "name": "霧玫", "code": "H03", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "046", "name": "夢粉", "code": "H04", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "047", "name": "鈍玫", "code": "H05", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "048", "name": "墨紫", "code": "H06", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "049", "name": "烈焰", "code": "M01", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "050", "name": "炎橘", "code": "M02", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "051", "name": "爍陽", "code": "M03", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "052", "name": "翠醒", "code": "M04", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "053", "name": "碧藍", "code": "M05", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "054", "name": "藤深", "code": "M06", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "055", "name": "艷桃", "code": "M07", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "056", "name": "花苔之息", "code": "C01", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "057", "name": "霞草微光", "code": "C02", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "058", "name": "春嵐柔煙", "code": "C03", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "059", "name": "染蕨深紅", "code": "C04", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "060", "name": "餘暉沙痕", "code": "C05", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "061", "name": "曉田薄霧", "code": "C06", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "062", "name": "紅土晨露", "code": "C07", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "063", "name": "初醒夢粉", "code": "C08", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "064", "name": "曉霧玫光", "code": "C09", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "065", "name": "春薄相映", "code": "C10", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "066", "name": "苔木歲跡", "code": "C11", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "067", "name": "深林窯火", "code": "C12", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "068", "name": "夜林礫道", "code": "C13", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "069", "name": "嫩葉紙間", "code": "C14", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "070", "name": "苔山遠岫", "code": "C15", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "071", "name": "煙嵐霧際", "code": "C16", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "072", "name": "蕨海深沉", "code": "C17", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "073", "name": "夜林海色", "code": "C18", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "074", "name": "蕨燼之間", "code": "C19", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "075", "name": "夜林墨夜", "code": "C20", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "076", "name": "礫跡晴湖", "code": "C21", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "077", "name": "稻田雨前", "code": "C22", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "078", "name": "晨土遠山", "code": "C23", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "079", "name": "紙間霧際", "code": "C24", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "080", "name": "礫路稻熟", "code": "C25", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "081", "name": "砂印蜜光", "code": "C26", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "082", "name": "窯前漆金", "code": "C27", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "083", "name": "木暮秋陽", "code": "C28", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "084", "name": "紙夢之間", "code": "C29", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "085", "name": "土玫晨霧", "code": "C30", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "086", "name": "遠岫金穗", "code": "C31", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "087", "name": "雨前蜜光", "code": "C32", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "088", "name": "湖面金午", "code": "C33", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "089", "name": "岫暮相融", "code": "C34", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "090", "name": "靛夜宵紫", "code": "C35", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "091", "name": "霧際玫影", "code": "C36", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "092", "name": "海沉墨夜", "code": "C37", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "093", "name": "夜海奧暗", "code": "C38", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "094", "name": "稻熟薄暮", "code": "C39", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "095", "name": "暖曦夢粉", "code": "C40", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "096", "name": "秋陽鈍玫", "code": "C41", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "097", "name": "漆金墨夜", "code": "C42", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "098", "name": "脂光燼後", "code": "C43", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "099", "name": "墨夜宵紫", "code": "C44", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "100", "name": "香餘鈍玫", "code": "C45", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "101", "name": "燼後墨紫", "code": "C46", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "102", "name": "暮染夜海", "code": "C47", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "103", "name": "苔歲稻熟", "code": "C48", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "104", "name": "餘暉鈍玫", "code": "C49", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}]</script>
+<script>
+(function(){
+  "use strict";
+  var DATA = JSON.parse(document.getElementById('card-data').textContent);
+  var GROUP_META = {"S": {"label": "初光群", "ro": "SHOKŌ", "hex": "#F0A89E"}, "T": {"label": "苔語群", "ro": "TAIGO", "hex": "#7A8C78"}, "J": {"label": "塵路群", "ro": "JINRO", "hex": "#C4A882"}, "E": {"label": "遠岫群", "ro": "ENSHŪ", "hex": "#6B7FA3"}, "K": {"label": "稻金群", "ro": "TŌKIN", "hex": "#D4A853"}, "B": {"label": "墨語群", "ro": "BOKUGO", "hex": "#5C5248"}, "H": {"label": "霞翳群", "ro": "KAEI", "hex": "#9B7EA0"}, "M": {"label": "明彩群", "ro": "MEISAI", "hex": "#E43A44"}, "C": {"label": "雙色共振", "ro": "PAIRS", "hex": "#B08090"}};
+  var GROUP_ORDER = ["S", "T", "J", "E", "K", "B", "H", "M", "C"];
+
+  var byNum = {};
+  DATA.forEach(function(c){ byNum[parseInt(c.n,10)] = c; });
+
+  var STORE_KEY = 'vershe-card-console-v1';
+  function loadState(){
+    var fallback = { clientName:'', slots:[{q:'',n:''},{q:'',n:''},{q:'',n:''}] };
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return fallback;
+      var parsed = JSON.parse(raw);
+      if(!parsed || !Array.isArray(parsed.slots) || parsed.slots.length!==3) return fallback;
+      return parsed;
+    }catch(e){ return fallback; }
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  var state = loadState();
+
+  function pad3(n){ n = String(n).replace(/[^0-9]/g,''); if(!n) return ''; var v = parseInt(n,10); if(v<1||v>104) return ''; return (v<10?'00':v<100?'0':'')+v; }
+  function cardFor(numLike){ var p = pad3(numLike); if(!p) return null; return byNum[parseInt(p,10)] || null; }
+
+  // ---------- slots ----------
+  var slotGrid = document.getElementById('slotGrid');
+  function renderSlots(){
+    slotGrid.innerHTML = '';
+    state.slots.forEach(function(slot, i){
+      var el = document.createElement('div');
+      el.className = 'slot';
+      var card = cardFor(slot.n);
+      el.innerHTML =
+        '<div class="slot-head">問題 ' + (i+1) + '</div>' +
+        '<textarea class="slot-question" data-slot="'+i+'" placeholder="客戶想問的第 '+(i+1)+' 個問題">'+ (slot.q||'') +'</textarea>' +
+        '<div class="slot-cardrow">' +
+          '<input class="slot-number" data-slot="'+i+'" type="text" inputmode="numeric" maxlength="3" placeholder="卡號" value="'+(slot.n||'')+'">' +
+          '<div class="slot-thumb" data-slot="'+i+'">' + (card ? '<img src="back/'+card.n+'.png" alt="">' : '<span class="slot-thumb-empty">—</span>') + '</div>' +
+          '<button class="btn primary small slot-reveal" data-slot="'+i+'" type="button" '+(card?'':'disabled')+'>翻牌查看</button>' +
+        '</div>';
+      slotGrid.appendChild(el);
+    });
+    bindSlotEvents();
+    renderSelectedStrip();
+  }
+  function bindSlotEvents(){
+    slotGrid.querySelectorAll('.slot-question').forEach(function(ta){
+      ta.addEventListener('input', function(){
+        state.slots[+ta.dataset.slot].q = ta.value; saveState(); renderSelectedStrip();
+      });
+    });
+    slotGrid.querySelectorAll('.slot-number').forEach(function(inp){
+      inp.addEventListener('input', function(){
+        state.slots[+inp.dataset.slot].n = inp.value; saveState();
+        updateSlotThumb(+inp.dataset.slot);
+      });
+    });
+    slotGrid.querySelectorAll('.slot-reveal').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var i = +btn.dataset.slot;
+        var card = cardFor(state.slots[i].n);
+        if(card) openOverlay(card.n, i);
+      });
+    });
+  }
+  function updateSlotThumb(i){
+    var thumb = slotGrid.querySelector('.slot-thumb[data-slot="'+i+'"]');
+    var btn = slotGrid.querySelector('.slot-reveal[data-slot="'+i+'"]');
+    var card = cardFor(state.slots[i].n);
+    if(thumb) thumb.innerHTML = card ? '<img src="back/'+card.n+'.png" alt="">' : '<span class="slot-thumb-empty">—</span>';
+    if(btn) btn.disabled = !card;
+    renderSelectedStrip();
+  }
+
+  var clientNameInput = document.getElementById('clientName');
+  clientNameInput.value = state.clientName || '';
+  clientNameInput.addEventListener('input', function(){ state.clientName = clientNameInput.value; saveState(); });
+
+  // ---------- selected strip ----------
+  var selectedStrip = document.getElementById('selectedStrip');
+  function renderSelectedStrip(){
+    var chips = [];
+    state.slots.forEach(function(slot, i){
+      var card = cardFor(slot.n);
+      if(!card) return;
+      chips.push('<div class="selected-chip" data-slot="'+i+'" style="cursor:pointer"><img src="back/'+card.n+'.png" alt=""><span>第 '+(i+1)+' 題 · No.'+parseInt(card.n,10)+' <b>'+card.name+'</b></span></div>');
+    });
+    if(!chips.length){ selectedStrip.hidden = true; selectedStrip.innerHTML=''; return; }
+    selectedStrip.hidden = false;
+    selectedStrip.innerHTML = chips.join('');
+    selectedStrip.querySelectorAll('.selected-chip').forEach(function(chip){
+      chip.addEventListener('click', function(){
+        var i = +chip.dataset.slot;
+        var card = cardFor(state.slots[i].n);
+        if(card) openOverlay(card.n, i);
+      });
+    });
+  }
+
+  // ---------- browse grid ----------
+  var groupsWrap = document.getElementById('groupsWrap');
+  function buildGroups(){
+    var byGroup = {};
+    DATA.forEach(function(c){ (byGroup[c.g] = byGroup[c.g]||[]).push(c); });
+    var html = '';
+    GROUP_ORDER.forEach(function(g){
+      var meta = GROUP_META[g];
+      var cards = byGroup[g] || [];
+      html += '<div class="group">' +
+        '<div class="group-head"><span class="group-dot" style="background:'+meta.hex+'"></span>' +
+          '<span class="group-label">'+meta.label+'</span><span class="group-ro">'+meta.ro+'</span></div>' +
+        '<div class="grid">' + cards.map(function(c){
+          return '<div class="tile" data-n="'+c.n+'" title="No.'+parseInt(c.n,10)+' '+c.name+'">' +
+            '<img src="back/'+c.n+'.png" alt="" loading="lazy" decoding="async">' +
+            '<span class="num">'+parseInt(c.n,10)+'</span></div>';
+        }).join('') + '</div></div>';
+    });
+    groupsWrap.innerHTML = html;
+    groupsWrap.querySelectorAll('.tile').forEach(function(tile){
+      tile.addEventListener('click', function(){ openOverlay(tile.dataset.n, null); });
+    });
+  }
+
+  // ---------- overlay ----------
+  var overlay = document.getElementById('overlay');
+  var flipCard = document.getElementById('flipCard');
+  var faceBack = document.getElementById('faceBack');
+  var faceFront = document.getElementById('faceFront');
+  var overlayId = document.getElementById('overlayId');
+  var overlayName = document.getElementById('overlayName');
+  var overlayQuestion = document.getElementById('overlayQuestion');
+  var oqText = document.getElementById('oqText');
+  var currentNum = null;
+  var currentSlot = null;
+
+  function openOverlay(numStr, slotIndex){
+    var card = cardFor(numStr);
+    if(!card) return;
+    currentNum = parseInt(card.n,10);
+    currentSlot = (slotIndex===undefined) ? null : slotIndex;
+    faceBack.src = 'back/' + card.n + '.png';
+    faceFront.src = 'front/' + card.n + '.png';
+    flipCard.classList.remove('flipped');
+    overlayId.textContent = 'No. ' + currentNum + ' · ' + card.glabel;
+    overlayName.textContent = card.name;
+    if(currentSlot!==null && state.slots[currentSlot].q){
+      oqText.textContent = state.slots[currentSlot].q;
+      overlayQuestion.hidden = false;
+    } else {
+      overlayQuestion.hidden = true;
+    }
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeOverlay(){
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+  flipCard.addEventListener('click', function(){ flipCard.classList.toggle('flipped'); });
+  document.getElementById('overlayClose').addEventListener('click', closeOverlay);
+  document.getElementById('overlayBackdrop').addEventListener('click', closeOverlay);
+  document.getElementById('navCover').addEventListener('click', function(){ flipCard.classList.remove('flipped'); });
+  document.getElementById('navPrev').addEventListener('click', function(){
+    var n = currentNum - 1; if(n<1) n = 104; openOverlay(String(n), null);
+  });
+  document.getElementById('navNext').addEventListener('click', function(){
+    var n = currentNum + 1; if(n>104) n = 1; openOverlay(String(n), null);
+  });
+  document.querySelectorAll('.oa-buttons [data-slot]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var i = +btn.dataset.slot;
+      if(currentNum==null) return;
+      state.slots[i].n = String(currentNum);
+      currentSlot = i;
+      saveState();
+      renderSlots();
+      if(state.slots[i].q){ oqText.textContent = state.slots[i].q; overlayQuestion.hidden = false; }
+    });
+  });
+  window.addEventListener('keydown', function(e){
+    if(overlay.hidden) return;
+    if(e.key==='Escape') closeOverlay();
+    if(e.key===' '){ e.preventDefault(); flipCard.classList.toggle('flipped'); }
+  });
+
+  // ---------- quick find ----------
+  var jumpInput = document.getElementById('jumpInput');
+  var jumpBtn = document.getElementById('jumpBtn');
+  function doJump(){
+    var card = cardFor(jumpInput.value);
+    if(card){ openOverlay(card.n, null); }
+  }
+  jumpBtn.addEventListener('click', doJump);
+  jumpInput.addEventListener('keydown', function(e){ if(e.key==='Enter') doJump(); });
+
+  // ---------- present mode ----------
+  var btnPresent = document.getElementById('btnPresent');
+  btnPresent.addEventListener('click', function(){
+    var on = document.body.classList.toggle('present');
+    btnPresent.textContent = on ? '退出簡報模式' : '簡報模式';
+  });
+
+  // ---------- reset ----------
+  var btnReset = document.getElementById('btnReset');
+  var confirmModal = document.getElementById('confirmModal');
+  btnReset.addEventListener('click', function(){ confirmModal.hidden = false; });
+  document.getElementById('confirmCancel').addEventListener('click', function(){ confirmModal.hidden = true; });
+  document.getElementById('confirmOk').addEventListener('click', function(){
+    state = { clientName:'', slots:[{q:'',n:''},{q:'',n:''},{q:'',n:''}] };
+    saveState();
+    clientNameInput.value = '';
+    renderSlots();
+    confirmModal.hidden = true;
+  });
+
+
+  // ---------- 客戶線上填寫：監聽最新一筆 ----------
+  var GAS_URL = "https://script.google.com/macros/s/AKfycby_NsxilR4uvVZ2t0sDpEQwap3KqdLVJG4Z6F86jTpH3QhmgwgkSziLnZCuW3YNnMFvBA/exec";
+  var watchSince = new Date().toISOString();
+  var lastAppliedId = null;
+  var listening = false;
+  var pollTimer = null;
+  var listenStatus = document.getElementById('listenStatus');
+  var btnListenToggle = document.getElementById('btnListenToggle');
+  var btnListenRefresh = document.getElementById('btnListenRefresh');
+
+  function setListenStatus(text, cls){
+    listenStatus.textContent = text;
+    listenStatus.className = 'listen-status' + (cls ? ' ' + cls : '');
+  }
+
+  function applyIncoming(row){
+    if(!row) return;
+    state.slots[0] = { q: row.q1||'', n: row.n1||'' };
+    state.slots[1] = { q: row.q2||'', n: row.n2||'' };
+    state.slots[2] = { q: row.q3||'', n: row.n3||'' };
+    saveState();
+    renderSlots();
+    setListenStatus('已收到客戶剛剛送出的資料！', 'found');
+  }
+
+  function pollOnce(){
+    if(!GAS_URL) return;
+    fetch(GAS_URL + '?mode=latest&since=' + encodeURIComponent(watchSince))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data && data.found && data.row && data.row.submission_id !== lastAppliedId){
+          lastAppliedId = data.row.submission_id;
+          applyIncoming(data.row);
+        } else if(listening){
+          setListenStatus('監聽中…等待客戶送出', 'live');
+        }
+      })
+      .catch(function(){
+        setListenStatus('連線異常，請按「立即重新整理」再試一次');
+      });
+  }
+
+  function startListening(){
+    if(!GAS_URL){
+      setListenStatus('尚未設定後端網址，請先部署 Google Apps Script 並貼上網址');
+      return;
+    }
+    listening = true;
+    btnListenToggle.textContent = '停止監聽';
+    setListenStatus('監聽中…等待客戶送出', 'live');
+    pollOnce();
+    pollTimer = setInterval(pollOnce, 5000);
+  }
+  function stopListening(){
+    listening = false;
+    btnListenToggle.textContent = '開始監聽';
+    clearInterval(pollTimer);
+    setListenStatus('已停止監聽');
+  }
+  btnListenToggle.addEventListener('click', function(){
+    if(listening) stopListening(); else startListening();
+  });
+  btnListenRefresh.addEventListener('click', pollOnce);
+
+  // 按「新諮詢」時，監聽起點重設為現在，避免抓到上一位客戶的舊資料
+  var _origReset = document.getElementById('confirmOk');
+  _origReset.addEventListener('click', function(){
+    watchSince = new Date().toISOString();
+    lastAppliedId = null;
+    if(listening) setListenStatus('監聽中…等待客戶送出', 'live');
+  });
+
+  buildGroups();
+  renderSlots();
+})();
+</script>
+
+</body>
+</html>

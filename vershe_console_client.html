@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>選出你的三張卡 · VERSHE 色彩即詩</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;500;700&family=Playfair+Display:ital,wght@1,500;1,600&family=Noto+Sans+TC:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --paper:#FFF6F2; --paper-card:#FFFDFB; --paper-deep:#FBEDE6;
+  --ink:#2E2622; --ink-soft:#5B5049; --ink-faint:#9B8E85;
+  --rose:#D8536F; --rose-deep:#A83B52; --rose-pale:#FBD9DF;
+  --gold:#C9973E; --gold-pale:#F3E3C2;
+  --line:#EADFD8; --line-strong:#D8C7BC;
+  --shadow: 0 10px 28px rgba(60,42,36,.12);
+  --font-zh:'LXGW WenKai TC','Noto Serif TC',serif;
+  --font-ui:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  --font-en:'Playfair Display',serif;
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--font-ui); line-height:1.6;}
+h1,h2,h3{font-family:var(--font-zh); font-weight:700; margin:0;}
+img{max-width:100%; display:block;}
+button{font-family:inherit; cursor:pointer;}
+[hidden]{display:none !important;}
+
+.page{max-width:900px; margin:0 auto; padding:32px 18px 90px;}
+.eyebrow{font-size:11.5px; letter-spacing:.3em; color:var(--rose-deep); font-weight:600; margin-bottom:8px;}
+h1{font-size:24px; letter-spacing:.03em; margin-bottom:14px;}
+.intro{font-size:14.5px; color:var(--ink-soft); line-height:1.95; max-width:620px; margin-bottom:28px;}
+
+.qblock{background:var(--paper-card); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:24px; box-shadow:var(--shadow);}
+.qblock h2{font-size:15.5px; margin-bottom:12px;}
+.qrow{margin-bottom:12px;}
+.qrow:last-child{margin-bottom:0;}
+.qrow label{display:block; font-size:12.5px; color:var(--rose-deep); font-weight:700; margin-bottom:6px;}
+textarea{
+  font-family:inherit; font-size:15px; color:var(--ink); background:#fff; width:100%;
+  border:1px solid var(--line-strong); border-radius:9px; padding:10px 12px; outline:none;
+  resize:vertical; min-height:52px; line-height:1.7;
+}
+textarea:focus{border-color:var(--rose-deep);}
+
+.pickhead{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+.pickhead h2{font-size:15.5px;}
+.pickcount{font-size:13px; color:var(--ink-faint);}
+.pickcount b{color:var(--rose-deep);}
+
+.group{margin-bottom:22px;}
+.group-head{display:flex; align-items:baseline; gap:10px; margin-bottom:9px; padding-bottom:7px; border-bottom:1px solid var(--line);}
+.group-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+.group-label{font-family:var(--font-zh); font-size:14.5px; font-weight:700;}
+.group-ro{font-family:var(--font-en); font-style:italic; font-size:11.5px; color:var(--ink-faint); letter-spacing:.06em;}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(62px,1fr)); gap:8px;}
+.tile{
+  position:relative; border-radius:9px; overflow:hidden; cursor:pointer; border:2px solid var(--line-strong);
+  aspect-ratio:756/1056; background:var(--paper-deep); transition:transform .12s, border-color .12s;
+}
+.tile:hover{transform:translateY(-2px);}
+.tile img{width:100%; height:100%; object-fit:cover;}
+.tile .num{
+  position:absolute; top:4px; left:4px; min-width:18px; text-align:center; font-family:var(--font-en);
+  font-style:italic; font-size:10.5px; font-weight:600; color:var(--ink); background:rgba(255,253,251,.88);
+  border-radius:999px; padding:1px 5px; line-height:1.5;
+}
+.tile.selected{border-color:var(--rose-deep); box-shadow:0 0 0 3px var(--rose-pale);}
+.tile .order{
+  position:absolute; bottom:4px; right:4px; width:20px; height:20px; border-radius:50%;
+  background:var(--rose-deep); color:#fff; font-size:11px; font-weight:700; display:flex;
+  align-items:center; justify-content:center; font-family:var(--font-en); font-style:italic;
+}
+
+.toast{
+  position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(10px); opacity:0;
+  background:var(--ink); color:#fff; font-size:13px; padding:10px 18px; border-radius:999px;
+  box-shadow:0 10px 24px rgba(0,0,0,.25); transition:opacity .2s, transform .2s; pointer-events:none; z-index:30;
+  max-width:88vw; text-align:center;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+.submitbar{
+  position:fixed; left:0; right:0; bottom:0; background:var(--paper-card); border-top:1px solid var(--line);
+  padding:14px 18px; display:flex; align-items:center; justify-content:center; gap:14px; z-index:20;
+  box-shadow:0 -6px 20px rgba(60,42,36,.08);
+}
+.submitbar .status{font-size:12.5px; color:var(--ink-faint);}
+.btn-submit{
+  font-family:var(--font-ui); font-weight:700; font-size:15px; letter-spacing:.03em; color:#fff;
+  background:var(--rose-deep); border:none; border-radius:999px; padding:12px 32px;
+}
+.btn-submit:disabled{background:var(--line-strong); color:var(--ink-faint); cursor:not-allowed;}
+
+.resultwrap{
+  position:fixed; inset:0; background:var(--paper); z-index:50; display:flex; align-items:center; justify-content:center;
+  padding:30px 20px; text-align:center;
+}
+.resultwrap .eyebrow{margin-bottom:14px;}
+.resultwrap h2{font-size:24px; margin-bottom:16px;}
+.resultwrap p{font-size:15px; color:var(--ink-soft); line-height:2; max-width:460px; margin:0 auto;}
+.spinner{
+  width:34px; height:34px; border-radius:50%; border:3px solid var(--line-strong); border-top-color:var(--rose-deep);
+  animation:spin 0.9s linear infinite; margin:0 auto 20px;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+@media (max-width:560px){ .page{padding-top:24px;} }
+</style>
+</head>
+<body>
+
+<div class="page" id="formView">
+  <div class="eyebrow">VERSHE 色彩即詩 · 線上諮詢</div>
+  <h1>選出你的三張卡</h1>
+  <p class="intro">在開始之前，先寫下你今天最想問的三個問題——不用想得太完美，直覺想到的就可以。接著從下面 104 張卡牌裡，憑直覺點選三張讓你有感覺的，先別急著猜裡面寫了什麼，這一步只要跟著感覺走。送出之後，我們就可以一起把這三張卡翻開，聊聊它們想對你說的話。</p>
+
+  <div class="qblock">
+    <h2>今天想問的三個問題</h2>
+    <div class="qrow"><label for="q1">問題 1</label><textarea id="q1" placeholder="寫下你今天最想問的第一個問題"></textarea></div>
+    <div class="qrow"><label for="q2">問題 2</label><textarea id="q2" placeholder="寫下你今天最想問的第二個問題"></textarea></div>
+    <div class="qrow"><label for="q3">問題 3</label><textarea id="q3" placeholder="寫下你今天最想問的第三個問題"></textarea></div>
+  </div>
+
+  <div class="pickhead">
+    <h2>憑直覺選三張卡</h2>
+    <div class="pickcount">已選 <b id="pickCount">0</b> / 3</div>
+  </div>
+  <div id="groupsWrap"></div>
+</div>
+
+<div class="submitbar">
+  <div class="status" id="statusText">先寫問題、再選三張卡</div>
+  <button class="btn-submit" id="btnSubmit" type="button" disabled>送出</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="resultwrap" id="resultSending" hidden>
+  <div>
+    <div class="spinner"></div>
+    <h2>送出中…</h2>
+    <p>請稍等一下下。</p>
+  </div>
+</div>
+
+<div class="resultwrap" id="resultOk" hidden>
+  <div>
+    <div class="eyebrow">VERSHE 色彩即詩</div>
+    <h2>謝謝你，已經送出了</h2>
+    <p>接下來請抬頭看螢幕，我們要一起把這三張卡翻開，聽聽它們想對你說的話。</p>
+  </div>
+</div>
+
+<div class="resultwrap" id="resultSoft" hidden>
+  <div>
+    <div class="eyebrow">VERSHE 色彩即詩</div>
+    <h2>已經送出囉</h2>
+    <p>畫面還沒收到確認，如果等一下 Pola 說沒看到，麻煩跟她說一聲、再送一次就好。</p>
+  </div>
+</div>
+
+<script id="card-data" type="application/json">[{"n": "001", "name": "初醒", "code": "S01", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "002", "name": "餘暉", "code": "S02", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "003", "name": "霞隱", "code": "S03", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "004", "name": "曉染", "code": "S04", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "005", "name": "紅潮", "code": "S05", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "006", "name": "春氣", "code": "S06", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "007", "name": "暮染", "code": "S07", "g": "S", "glabel": "初光群", "ghex": "#F0A89E"}, {"n": "008", "name": "苔歲", "code": "T01", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "009", "name": "煙綠", "code": "T02", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "010", "name": "林深", "code": "T03", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "011", "name": "初葉", "code": "T04", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "012", "name": "蕨影", "code": "T05", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "013", "name": "遠草", "code": "T06", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "014", "name": "夜林", "code": "T07", "g": "T", "glabel": "苔語群", "ghex": "#7A8C78"}, {"n": "015", "name": "礫跡", "code": "J01", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "016", "name": "紙間", "code": "J02", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "017", "name": "砂印", "code": "J03", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "018", "name": "木暮", "code": "J04", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "019", "name": "稻田", "code": "J05", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "020", "name": "窯前", "code": "J06", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "021", "name": "晨土", "code": "J07", "g": "J", "glabel": "塵路群", "ghex": "#C4A882"}, {"n": "022", "name": "遠岫", "code": "E01", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "023", "name": "晴湖", "code": "E02", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "024", "name": "暮靛", "code": "E03", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "025", "name": "霧際", "code": "E04", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "026", "name": "海沉", "code": "E05", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "027", "name": "雨前", "code": "E06", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "028", "name": "夜海", "code": "E07", "g": "E", "glabel": "遠岫群", "ghex": "#6B7FA3"}, {"n": "029", "name": "稻熟", "code": "K01", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "030", "name": "金午", "code": "K02", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "031", "name": "脂光", "code": "K03", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "032", "name": "蜜光", "code": "K04", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "033", "name": "秋陽", "code": "K05", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "034", "name": "暖曦", "code": "K06", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "035", "name": "漆金", "code": "K07", "g": "K", "glabel": "稻金群", "ghex": "#D4A853"}, {"n": "036", "name": "墨夜", "code": "B01", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "037", "name": "燼後", "code": "B02", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "038", "name": "奧暗", "code": "B03", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "039", "name": "香餘", "code": "B04", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "040", "name": "淵夜", "code": "B05", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "041", "name": "磐聲", "code": "B06", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "042", "name": "沉木", "code": "B07", "g": "B", "glabel": "墨語群", "ghex": "#5C5248"}, {"n": "043", "name": "薄暮", "code": "H01", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "044", "name": "宵紫", "code": "H02", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "045", "name": "霧玫", "code": "H03", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "046", "name": "夢粉", "code": "H04", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "047", "name": "鈍玫", "code": "H05", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "048", "name": "墨紫", "code": "H06", "g": "H", "glabel": "霞翳群", "ghex": "#9B7EA0"}, {"n": "049", "name": "烈焰", "code": "M01", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "050", "name": "炎橘", "code": "M02", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "051", "name": "爍陽", "code": "M03", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "052", "name": "翠醒", "code": "M04", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "053", "name": "碧藍", "code": "M05", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "054", "name": "藤深", "code": "M06", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "055", "name": "艷桃", "code": "M07", "g": "M", "glabel": "明彩群", "ghex": "#E43A44"}, {"n": "056", "name": "花苔之息", "code": "C01", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "057", "name": "霞草微光", "code": "C02", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "058", "name": "春嵐柔煙", "code": "C03", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "059", "name": "染蕨深紅", "code": "C04", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "060", "name": "餘暉沙痕", "code": "C05", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "061", "name": "曉田薄霧", "code": "C06", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "062", "name": "紅土晨露", "code": "C07", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "063", "name": "初醒夢粉", "code": "C08", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "064", "name": "曉霧玫光", "code": "C09", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "065", "name": "春薄相映", "code": "C10", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "066", "name": "苔木歲跡", "code": "C11", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "067", "name": "深林窯火", "code": "C12", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "068", "name": "夜林礫道", "code": "C13", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "069", "name": "嫩葉紙間", "code": "C14", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "070", "name": "苔山遠岫", "code": "C15", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "071", "name": "煙嵐霧際", "code": "C16", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "072", "name": "蕨海深沉", "code": "C17", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "073", "name": "夜林海色", "code": "C18", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "074", "name": "蕨燼之間", "code": "C19", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "075", "name": "夜林墨夜", "code": "C20", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "076", "name": "礫跡晴湖", "code": "C21", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "077", "name": "稻田雨前", "code": "C22", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "078", "name": "晨土遠山", "code": "C23", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "079", "name": "紙間霧際", "code": "C24", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "080", "name": "礫路稻熟", "code": "C25", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "081", "name": "砂印蜜光", "code": "C26", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "082", "name": "窯前漆金", "code": "C27", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "083", "name": "木暮秋陽", "code": "C28", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "084", "name": "紙夢之間", "code": "C29", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "085", "name": "土玫晨霧", "code": "C30", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "086", "name": "遠岫金穗", "code": "C31", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "087", "name": "雨前蜜光", "code": "C32", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "088", "name": "湖面金午", "code": "C33", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "089", "name": "岫暮相融", "code": "C34", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "090", "name": "靛夜宵紫", "code": "C35", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "091", "name": "霧際玫影", "code": "C36", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "092", "name": "海沉墨夜", "code": "C37", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "093", "name": "夜海奧暗", "code": "C38", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "094", "name": "稻熟薄暮", "code": "C39", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "095", "name": "暖曦夢粉", "code": "C40", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "096", "name": "秋陽鈍玫", "code": "C41", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "097", "name": "漆金墨夜", "code": "C42", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "098", "name": "脂光燼後", "code": "C43", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "099", "name": "墨夜宵紫", "code": "C44", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "100", "name": "香餘鈍玫", "code": "C45", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "101", "name": "燼後墨紫", "code": "C46", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "102", "name": "暮染夜海", "code": "C47", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "103", "name": "苔歲稻熟", "code": "C48", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}, {"n": "104", "name": "餘暉鈍玫", "code": "C49", "g": "C", "glabel": "雙色共振", "ghex": "#B08090"}]</script>
+<script>
+(function(){
+  "use strict";
+  var GAS_URL = "https://script.google.com/macros/s/AKfycby_NsxilR4uvVZ2t0sDpEQwap3KqdLVJG4Z6F86jTpH3QhmgwgkSziLnZCuW3YNnMFvBA/exec"; // 由 Pola 部署 Google Apps Script 後填入
+  var DATA = JSON.parse(document.getElementById('card-data').textContent);
+  var GROUP_META = {"S": {"label": "初光群", "ro": "SHOKŌ", "hex": "#F0A89E"}, "T": {"label": "苔語群", "ro": "TAIGO", "hex": "#7A8C78"}, "J": {"label": "塵路群", "ro": "JINRO", "hex": "#C4A882"}, "E": {"label": "遠岫群", "ro": "ENSHŪ", "hex": "#6B7FA3"}, "K": {"label": "稻金群", "ro": "TŌKIN", "hex": "#D4A853"}, "B": {"label": "墨語群", "ro": "BOKUGO", "hex": "#5C5248"}, "H": {"label": "霞翳群", "ro": "KAEI", "hex": "#9B7EA0"}, "M": {"label": "明彩群", "ro": "MEISAI", "hex": "#E43A44"}, "C": {"label": "雙色共振", "ro": "PAIRS", "hex": "#B08090"}};
+  var GROUP_ORDER = ["S", "T", "J", "E", "K", "B", "H", "M", "C"];
+
+  var selected = []; // array of n strings, in pick order, max 3
+
+  var groupsWrap = document.getElementById('groupsWrap');
+  function buildGroups(){
+    var byGroup = {};
+    DATA.forEach(function(c){ (byGroup[c.g] = byGroup[c.g]||[]).push(c); });
+    var html = '';
+    GROUP_ORDER.forEach(function(g){
+      var meta = GROUP_META[g];
+      var cards = byGroup[g] || [];
+      html += '<div class="group">' +
+        '<div class="group-head"><span class="group-dot" style="background:'+meta.hex+'"></span>' +
+          '<span class="group-label">'+meta.label+'</span><span class="group-ro">'+meta.ro+'</span></div>' +
+        '<div class="grid">' + cards.map(function(c){
+          return '<div class="tile" data-n="'+c.n+'" title="No.'+parseInt(c.n,10)+'">' +
+            '<img src="back/'+c.n+'.png" alt="" loading="lazy" decoding="async">' +
+            '<span class="num">'+parseInt(c.n,10)+'</span></div>';
+        }).join('') + '</div></div>';
+    });
+    groupsWrap.innerHTML = html;
+    groupsWrap.querySelectorAll('.tile').forEach(function(tile){
+      tile.addEventListener('click', function(){ toggleTile(tile.dataset.n); });
+    });
+  }
+
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+  }
+
+  function toggleTile(n){
+    var idx = selected.indexOf(n);
+    if(idx !== -1){
+      selected.splice(idx,1);
+    } else {
+      if(selected.length >= 3){
+        showToast('已經選滿三張囉，先點掉一張再選新的');
+        return;
+      }
+      selected.push(n);
+    }
+    renderSelection();
+  }
+
+  function renderSelection(){
+    document.querySelectorAll('.tile').forEach(function(tile){
+      var n = tile.dataset.n;
+      var idx = selected.indexOf(n);
+      tile.querySelector('.order') && tile.querySelector('.order').remove();
+      if(idx !== -1){
+        tile.classList.add('selected');
+        var badge = document.createElement('span');
+        badge.className = 'order';
+        badge.textContent = (idx+1);
+        tile.appendChild(badge);
+      } else {
+        tile.classList.remove('selected');
+      }
+    });
+    document.getElementById('pickCount').textContent = selected.length;
+    updateSubmitState();
+  }
+
+  function questionsFilled(){
+    return ['q1','q2','q3'].every(function(id){ return document.getElementById(id).value.trim().length > 0; });
+  }
+  var btnSubmit = document.getElementById('btnSubmit');
+  var statusText = document.getElementById('statusText');
+  function updateSubmitState(){
+    var ok = selected.length === 3 && questionsFilled();
+    btnSubmit.disabled = !ok;
+    if(!GAS_URL){
+      statusText.textContent = '此頁面尚未設定後端網址，請聯絡 Pola';
+      btnSubmit.disabled = true;
+    } else if(ok){
+      statusText.textContent = '都準備好了，可以送出';
+    } else if(selected.length < 3){
+      statusText.textContent = '還差 ' + (3 - selected.length) + ' 張卡';
+    } else {
+      statusText.textContent = '三個問題都要寫一點喔';
+    }
+  }
+  ['q1','q2','q3'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', updateSubmitState);
+  });
+
+  function genId(){
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  }
+
+  function showView(id){
+    ['formView','resultSending','resultOk','resultSoft'].forEach(function(v){
+      var el = document.getElementById(v);
+      if(el) el.hidden = (v !== id);
+    });
+    document.querySelector('.submitbar').hidden = (id !== 'formView');
+  }
+
+  function pollFound(id, triesLeft){
+    if(triesLeft <= 0){ showView('resultSoft'); return; }
+    fetch(GAS_URL + '?mode=find&id=' + encodeURIComponent(id))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data && data.found){ showView('resultOk'); }
+        else { setTimeout(function(){ pollFound(id, triesLeft-1); }, 1000); }
+      })
+      .catch(function(){ setTimeout(function(){ pollFound(id, triesLeft-1); }, 1000); });
+  }
+
+  btnSubmit.addEventListener('click', function(){
+    if(btnSubmit.disabled) return;
+    var id = genId();
+    var payload = {
+      submission_id: id,
+      q1: document.getElementById('q1').value.trim(),
+      q2: document.getElementById('q2').value.trim(),
+      q3: document.getElementById('q3').value.trim(),
+      n1: selected[0] || '',
+      n2: selected[1] || '',
+      n3: selected[2] || '',
+      source: 'console-client',
+      page: location.href
+    };
+    showView('resultSending');
+    fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
+    }).catch(function(){ /* no-cors: 看不到結果，交給後面的輪詢確認 */ });
+    setTimeout(function(){ pollFound(id, 8); }, 800);
+  });
+
+  buildGroups();
+  updateSubmitState();
+})();
+</script>
+</body>
+</html>

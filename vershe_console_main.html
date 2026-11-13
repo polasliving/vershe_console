@@ -510,9 +510,16 @@ body.present .page{padding-top:16px;}
 
 
   // ---------- 客戶線上填寫：監聽最新一筆 ----------
+  // 用「有沒有看過這個 submission_id」來判斷是不是新資料，不用時間戳記，
+  // 這樣即使中途重新整理瀏覽器頁面，也不會漏掉已經送出、但還沒套用的那一筆。
   var GAS_URL = "https://script.google.com/macros/s/AKfycby_NsxilR4uvVZ2t0sDpEQwap3KqdLVJG4Z6F86jTpH3QhmgwgkSziLnZCuW3YNnMFvBA/exec";
-  var watchSince = new Date().toISOString();
+  var LAST_ID_KEY = 'versheConsoleLastAppliedId';
   var lastAppliedId = null;
+  var baselineInitialized = false;
+  try {
+    var storedId = localStorage.getItem(LAST_ID_KEY);
+    if (storedId) { lastAppliedId = storedId; baselineInitialized = true; }
+  } catch (e) {}
   var listening = false;
   var pollTimer = null;
   var listenStatus = document.getElementById('listenStatus');
@@ -522,6 +529,11 @@ body.present .page{padding-top:16px;}
   function setListenStatus(text, cls){
     listenStatus.textContent = text;
     listenStatus.className = 'listen-status' + (cls ? ' ' + cls : '');
+  }
+
+  function rememberAppliedId(id){
+    lastAppliedId = id;
+    try { localStorage.setItem(LAST_ID_KEY, id || ''); } catch (e) {}
   }
 
   function applyIncoming(row){
@@ -536,12 +548,23 @@ body.present .page{padding-top:16px;}
 
   function pollOnce(){
     if(!GAS_URL) return;
-    fetch(GAS_URL + '?mode=latest&since=' + encodeURIComponent(watchSince))
+    fetch(GAS_URL + '?mode=latest')
       .then(function(r){ return r.json(); })
       .then(function(data){
-        if(data && data.found && data.row && data.row.submission_id !== lastAppliedId){
-          lastAppliedId = data.row.submission_id;
-          applyIncoming(data.row);
+        if(data && data.found && data.row){
+          var incomingId = data.row.submission_id;
+          if(!baselineInitialized){
+            // 第一次監聽：先記住目前最新一筆是誰，不要把它當成「新資料」套進欄位，
+            // 避免一開啟主控台就被舊的（上一位客戶的）資料洗掉畫面。
+            baselineInitialized = true;
+            rememberAppliedId(incomingId);
+            if(listening) setListenStatus('監聽中…等待客戶送出', 'live');
+          } else if(incomingId && incomingId !== lastAppliedId){
+            rememberAppliedId(incomingId);
+            applyIncoming(data.row);
+          } else if(listening){
+            setListenStatus('監聽中…等待客戶送出', 'live');
+          }
         } else if(listening){
           setListenStatus('監聽中…等待客戶送出', 'live');
         }
@@ -573,13 +596,8 @@ body.present .page{padding-top:16px;}
   });
   btnListenRefresh.addEventListener('click', pollOnce);
 
-  // 按「新諮詢」時，監聽起點重設為現在，避免抓到上一位客戶的舊資料
-  var _origReset = document.getElementById('confirmOk');
-  _origReset.addEventListener('click', function(){
-    watchSince = new Date().toISOString();
-    lastAppliedId = null;
-    if(listening) setListenStatus('監聽中…等待客戶送出', 'live');
-  });
+  // 按「新諮詢」時不用特別重設監聽狀態：
+  // 下一位客戶送出的 submission_id 一定跟目前記住的不一樣，自然會被偵測到。
 
   buildGroups();
   renderSlots();

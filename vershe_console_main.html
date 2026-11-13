@@ -216,10 +216,10 @@ body.present .page{padding-top:16px;}
     <div class="listen-head">
       <div>
         <div class="listen-title">客戶線上填寫</div>
-        <div class="listen-status" id="listenStatus">尚未開始監聽</div>
+        <div class="listen-status" id="listenStatus">尚未開始同步</div>
       </div>
       <div class="listen-actions">
-        <button id="btnListenToggle" class="btn primary small" type="button">開始監聽</button>
+        <button id="btnListenToggle" class="btn primary small" type="button">開始同步</button>
         <button id="btnListenRefresh" class="btn ghost small" type="button">立即重新整理</button>
       </div>
     </div>
@@ -558,15 +558,15 @@ body.present .page{padding-top:16px;}
             // 避免一開啟主控台就被舊的（上一位客戶的）資料洗掉畫面。
             baselineInitialized = true;
             rememberAppliedId(incomingId);
-            if(listening) setListenStatus('監聽中…等待客戶送出', 'live');
+            if(listening) setListenStatus('同步中…等待客戶送出', 'live');
           } else if(incomingId && incomingId !== lastAppliedId){
             rememberAppliedId(incomingId);
             applyIncoming(data.row);
           } else if(listening){
-            setListenStatus('監聽中…等待客戶送出', 'live');
+            setListenStatus('同步中…等待客戶送出', 'live');
           }
         } else if(listening){
-          setListenStatus('監聽中…等待客戶送出', 'live');
+          setListenStatus('同步中…等待客戶送出', 'live');
         }
       })
       .catch(function(){
@@ -580,16 +580,16 @@ body.present .page{padding-top:16px;}
       return;
     }
     listening = true;
-    btnListenToggle.textContent = '停止監聽';
-    setListenStatus('監聽中…等待客戶送出', 'live');
+    btnListenToggle.textContent = '停止同步';
+    setListenStatus('同步中…等待客戶送出', 'live');
     pollOnce();
     pollTimer = setInterval(pollOnce, 5000);
   }
   function stopListening(){
     listening = false;
-    btnListenToggle.textContent = '開始監聽';
+    btnListenToggle.textContent = '開始同步';
     clearInterval(pollTimer);
-    setListenStatus('已停止監聽');
+    setListenStatus('已停止同步');
   }
   btnListenToggle.addEventListener('click', function(){
     if(listening) stopListening(); else startListening();
